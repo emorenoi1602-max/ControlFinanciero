@@ -1,0 +1,1432 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Control Financiero Quincenal</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #0a0e1a;
+  --bg2:      #111827;
+  --bg3:      #1a2235;
+  --bg4:      #1f2d44;
+  --border:   #2a3a55;
+  --border2:  #3a4f70;
+  --text:     #e2eaf6;
+  --text2:    #8ba3c7;
+  --text3:    #4f6b99;
+
+  --grn:      #10d98e;
+  --grn-dim:  #0b7a50;
+  --grn-bg:   #0a2e20;
+  --red:      #ff4d72;
+  --red-dim:  #8b1f35;
+  --red-bg:   #2a0d15;
+  --ylw:      #fbbf24;
+  --ylw-bg:   #2d1f00;
+  --blue:     #4f8ef7;
+  --blue-dim: #1e3f80;
+  --blue-bg:  #0a1830;
+  --purp:     #a78bfa;
+  --purp-bg:  #1a0d35;
+  --teal:     #2dd4bf;
+  --teal-bg:  #0a2020;
+  --org:      #fb923c;
+  --org-bg:   #2a1000;
+
+  --q1:       #4f8ef7;
+  --q1-bg:    #0a1830;
+  --q2:       #a78bfa;
+  --q2-bg:    #1a0d35;
+
+  --radius:   10px;
+  --radius-lg:16px;
+  --shadow:   0 4px 24px rgba(0,0,0,.4);
+  --shadow-sm:0 2px 8px rgba(0,0,0,.3);
+  --font-ui:  'DM Sans', sans-serif;
+  --font-mono:'Space Mono', monospace;
+  --trans:    all .2s cubic-bezier(.4,0,.2,1);
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html{font-size:14px}
+body{background:var(--bg);color:var(--text);font-family:var(--font-ui);min-height:100vh;overflow-x:hidden}
+
+/* ── Scrollbar */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--bg2)}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+
+/* ══════════ HEADER ══════════ */
+.app-header{
+  background:var(--bg2);border-bottom:1px solid var(--border);
+  padding:0 28px;display:flex;align-items:center;gap:20px;
+  position:sticky;top:0;z-index:100;height:56px;
+}
+.app-logo{font-family:var(--font-mono);font-size:1rem;font-weight:700;color:var(--grn);
+  letter-spacing:-.03em;white-space:nowrap;flex-shrink:0}
+.app-subtitle{font-size:.78rem;color:var(--text3);margin-top:1px}
+.header-center{flex:1;display:flex;align-items:center;gap:12px;overflow-x:auto;padding:4px 0}
+
+/* ── Period selector in header */
+.period-pill{
+  display:flex;align-items:center;gap:8px;
+  background:var(--bg3);border:1px solid var(--border);border-radius:8px;
+  padding:4px 10px;margin-left:auto;flex-shrink:0;
+}
+.period-pill label{font-size:.72rem;color:var(--text3);white-space:nowrap}
+.period-pill select,.period-pill input[type=number]{
+  background:transparent;border:none;color:var(--text);font-family:var(--font-mono);
+  font-size:.82rem;font-weight:700;outline:none;cursor:pointer;
+}
+.period-pill select option{background:var(--bg2)}
+.period-pill input[type=number]{width:52px}
+input[type=number]::-webkit-inner-spin-button{display:none}
+
+/* ══════════ NAV TABS ══════════ */
+.nav-tabs{
+  display:flex;gap:2px;background:var(--bg2);
+  border-bottom:1px solid var(--border);
+  padding:0 28px;overflow-x:auto;
+}
+.nav-tab{
+  padding:10px 18px;font-size:.82rem;font-weight:600;
+  color:var(--text3);cursor:pointer;border:none;background:transparent;
+  border-bottom:2px solid transparent;white-space:nowrap;
+  transition:var(--trans);letter-spacing:.01em;
+}
+.nav-tab:hover{color:var(--text)}
+.nav-tab.active{color:var(--grn);border-bottom-color:var(--grn)}
+
+/* ══════════ LAYOUT ══════════ */
+.app-body{padding:24px 28px;max-width:1600px;margin:0 auto}
+.tab-content{display:none}
+.tab-content.active{display:block}
+
+/* ══════════ CARDS / KPIS ══════════ */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px;margin-bottom:24px}
+.kpi{
+  background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);
+  padding:18px 20px;position:relative;overflow:hidden;
+  transition:var(--trans);
+}
+.kpi:hover{border-color:var(--border2);transform:translateY(-1px)}
+.kpi-icon{font-size:1.5rem;margin-bottom:8px}
+.kpi-label{font-size:.72rem;color:var(--text3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px}
+.kpi-value{font-family:var(--font-mono);font-size:1.4rem;font-weight:700;letter-spacing:-.02em}
+.kpi-sub{font-size:.72rem;color:var(--text3);margin-top:4px}
+.kpi-bar{height:3px;border-radius:2px;margin-top:12px;background:var(--bg3)}
+.kpi-bar-fill{height:100%;border-radius:2px;transition:width .5s ease}
+.kpi.grn .kpi-value{color:var(--grn)} .kpi.grn .kpi-bar-fill{background:var(--grn)}
+.kpi.red .kpi-value{color:var(--red)} .kpi.red .kpi-bar-fill{background:var(--red)}
+.kpi.blue .kpi-value{color:var(--blue)} .kpi.blue .kpi-bar-fill{background:var(--blue)}
+.kpi.ylw .kpi-value{color:var(--ylw)} .kpi.ylw .kpi-bar-fill{background:var(--ylw)}
+.kpi.teal .kpi-value{color:var(--teal)} .kpi.teal .kpi-bar-fill{background:var(--teal)}
+.kpi.purp .kpi-value{color:var(--purp)} .kpi.purp .kpi-bar-fill{background:var(--purp)}
+
+/* ══════════ SECTION HEADERS ══════════ */
+.sec-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:12px;flex-wrap:wrap}
+.sec-title{font-size:1rem;font-weight:700;display:flex;align-items:center;gap:8px}
+.sec-title span{font-size:1.1rem}
+.sec-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+
+/* ══════════ BUTTONS ══════════ */
+.btn{
+  padding:7px 16px;border-radius:8px;font-size:.8rem;font-weight:600;
+  cursor:pointer;border:none;transition:var(--trans);display:inline-flex;
+  align-items:center;gap:6px;font-family:var(--font-ui);letter-spacing:.01em;
+}
+.btn-primary{background:var(--grn);color:#000}
+.btn-primary:hover{background:#12f0a0;transform:translateY(-1px)}
+.btn-danger{background:var(--red-bg);color:var(--red);border:1px solid var(--red-dim)}
+.btn-danger:hover{background:var(--red-dim)}
+.btn-ghost{background:var(--bg3);color:var(--text2);border:1px solid var(--border)}
+.btn-ghost:hover{border-color:var(--border2);color:var(--text)}
+.btn-sm{padding:4px 10px;font-size:.72rem}
+
+/* ══════════ TABLES ══════════ */
+.table-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:24px}
+table{width:100%;border-collapse:collapse}
+thead th{
+  background:var(--bg3);color:var(--text3);font-size:.7rem;font-weight:600;
+  text-transform:uppercase;letter-spacing:.08em;padding:10px 14px;
+  text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;
+}
+tbody tr{border-bottom:1px solid var(--border);transition:var(--trans)}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:var(--bg3)}
+td{padding:10px 14px;font-size:.83rem;color:var(--text2);vertical-align:middle}
+td.mono{font-family:var(--font-mono);font-size:.8rem}
+td.bold{color:var(--text);font-weight:600}
+.tag{
+  display:inline-flex;align-items:center;gap:4px;padding:2px 8px;
+  border-radius:20px;font-size:.68rem;font-weight:600;white-space:nowrap;
+}
+.tag-grn{background:var(--grn-bg);color:var(--grn);border:1px solid var(--grn-dim)}
+.tag-red{background:var(--red-bg);color:var(--red);border:1px solid var(--red-dim)}
+.tag-ylw{background:var(--ylw-bg);color:var(--ylw)}
+.tag-blue{background:var(--blue-bg);color:var(--blue)}
+.tag-purp{background:var(--purp-bg);color:var(--purp)}
+.tag-teal{background:var(--teal-bg);color:var(--teal)}
+.tag-org{background:var(--org-bg);color:var(--org)}
+.tag-q1{background:var(--q1-bg);color:var(--q1)}
+.tag-q2{background:var(--q2-bg);color:var(--q2)}
+
+/* cat colors */
+.cat-alim{color:#10d98e} .cat-trans{color:#4f8ef7} .cat-ent{color:#a78bfa}
+.cat-sal{color:#fbbf24} .cat-ropa{color:#fb7185} .cat-edu{color:#38bdf8}
+.cat-hog{color:#2dd4bf} .cat-otros{color:#94a3b8}
+
+/* ══════════ QUINCENA PANELS ══════════ */
+.q-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px}
+.q-panel{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden}
+.q-panel-head{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.q-panel-head h3{font-size:.88rem;font-weight:700}
+.q-panel-head.q1 h3{color:var(--q1)} .q-panel-head.q2 h3{color:var(--q2)}
+.q-row{display:flex;justify-content:space-between;align-items:center;padding:10px 18px;border-bottom:1px solid var(--border)}
+.q-row:last-child{border-bottom:none;background:var(--bg3)}
+.q-row label{font-size:.78rem;color:var(--text3)}
+.q-row .val{font-family:var(--font-mono);font-size:.9rem;font-weight:700}
+.q-row.total-row{padding:12px 18px}
+.q-row.total-row label{color:var(--text);font-weight:600;font-size:.82rem}
+.q-row.avail .val{color:var(--grn)}
+.q-row.spent .val{color:var(--red)}
+
+/* ══════════ ALERT STRIP ══════════ */
+.alerts-wrap{margin-bottom:24px}
+.alert-item{
+  display:flex;align-items:center;gap:12px;padding:10px 16px;
+  background:var(--bg2);border:1px solid;border-radius:var(--radius);
+  margin-bottom:8px;font-size:.8rem;
+}
+.alert-item.warn{border-color:var(--ylw-bg);background:var(--ylw-bg);color:var(--ylw)}
+.alert-item.ok{border-color:var(--grn-bg);background:var(--grn-bg);color:var(--grn)}
+.alert-item.danger{border-color:var(--red-bg);background:var(--red-bg);color:var(--red)}
+.alert-name{flex:1;font-weight:600}
+.alert-days{font-family:var(--font-mono);font-size:.75rem}
+
+/* ══════════ CHARTS ══════════ */
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px}
+.chart-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px}
+.chart-title{font-size:.82rem;font-weight:600;color:var(--text2);margin-bottom:16px;display:flex;align-items:center;gap:6px}
+.chart-wrap{position:relative;height:260px}
+
+/* ══════════ MODAL ══════════ */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;
+  display:flex;align-items:center;justify-content:center;padding:20px;
+  opacity:0;pointer-events:none;transition:opacity .2s ease;
+}
+.modal-overlay.open{opacity:1;pointer-events:all}
+.modal{
+  background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius-lg);
+  width:100%;max-width:520px;max-height:90vh;overflow-y:auto;
+  transform:translateY(20px) scale(.97);transition:transform .2s ease;
+  box-shadow:0 20px 60px rgba(0,0,0,.6);
+}
+.modal-overlay.open .modal{transform:translateY(0) scale(1)}
+.modal-head{padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.modal-head h2{font-size:.95rem;font-weight:700}
+.modal-close{background:none;border:none;color:var(--text3);cursor:pointer;font-size:1.2rem;padding:2px 6px;border-radius:4px}
+.modal-close:hover{color:var(--text);background:var(--bg3)}
+.modal-body{padding:20px 24px}
+.modal-footer{padding:16px 24px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end}
+
+/* ── Form elements */
+.form-row{margin-bottom:14px}
+.form-row.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+label.form-label{display:block;font-size:.72rem;color:var(--text3);font-weight:600;
+  text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+input.form-input,select.form-input,textarea.form-input{
+  width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;
+  padding:9px 12px;color:var(--text);font-family:var(--font-ui);font-size:.85rem;
+  outline:none;transition:var(--trans);
+}
+input.form-input:focus,select.form-input:focus{border-color:var(--grn);box-shadow:0 0 0 3px rgba(16,217,142,.1)}
+select.form-input option{background:var(--bg2)}
+textarea.form-input{resize:vertical;min-height:72px}
+
+/* ══════════ HISTÓRICO TABLE ══════════ */
+.hist-positive{color:var(--grn);font-family:var(--font-mono)}
+.hist-negative{color:var(--red);font-family:var(--font-mono)}
+.hist-neutral{font-family:var(--font-mono);color:var(--text)}
+
+/* ══════════ DEUDAS ══════════ */
+.debt-progress{width:100%;height:6px;background:var(--bg3);border-radius:3px;margin-top:4px}
+.debt-progress-fill{height:100%;border-radius:3px;background:var(--grn);transition:width .5s}
+
+/* ══════════ EMPTY STATE ══════════ */
+.empty-state{padding:48px 24px;text-align:center;color:var(--text3)}
+.empty-state-icon{font-size:2.5rem;margin-bottom:12px}
+.empty-state p{font-size:.85rem}
+
+/* ══════════ DROPDOWN FILTER ══════════ */
+.filter-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center}
+.filter-label{font-size:.72rem;color:var(--text3)}
+select.filter-select{
+  background:var(--bg3);border:1px solid var(--border);border-radius:6px;
+  color:var(--text2);font-size:.78rem;padding:5px 10px;outline:none;cursor:pointer;
+}
+
+/* ══════════ TOTALS ROW ══════════ */
+.table-total{background:var(--bg4) !important;border-top:1px solid var(--border2) !important}
+.table-total td{color:var(--text);font-weight:600}
+
+/* ══════════ RESPONSIVE ══════════ */
+@media(max-width:768px){
+  .app-body{padding:16px}
+  .q-grid,.charts-grid{grid-template-columns:1fr}
+  .form-row.two{grid-template-columns:1fr}
+  .kpi-grid{grid-template-columns:1fr 1fr}
+  .nav-tabs{padding:0 16px}
+  .app-header{padding:0 16px}
+}
+
+/* ══════════ TOOLTIP / PROGRESS ══════════ */
+.progress-ring{position:relative;width:100px;height:100px;margin:0 auto}
+.progress-ring svg{transform:rotate(-90deg)}
+.progress-ring-text{
+  position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;text-align:center;
+}
+.progress-ring-text .pct{font-family:var(--font-mono);font-size:1.1rem;font-weight:700}
+.progress-ring-text .lbl{font-size:.65rem;color:var(--text3)}
+
+/* ══════════ ANIMS ══════════ */
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.tab-content.active{animation:fadeUp .25s ease}
+
+/* ══════════ HEADER BADGE ══════════ */
+.mes-badge{
+  background:var(--bg3);border:1px solid var(--border);border-radius:6px;
+  padding:3px 10px;font-size:.72rem;color:var(--grn);font-weight:700;font-family:var(--font-mono);
+}
+
+/* ══════════ DEL BTN in tables ══════════ */
+.del-btn{
+  background:none;border:none;color:var(--text3);cursor:pointer;padding:3px 6px;
+  border-radius:4px;font-size:.85rem;transition:var(--trans);
+}
+.del-btn:hover{color:var(--red);background:var(--red-bg)}
+
+/* section divider */
+.divider{height:1px;background:var(--border);margin:20px 0}
+
+/* scroll hint */
+.scroll-hint{font-size:.7rem;color:var(--text3);margin-bottom:6px;display:flex;align-items:center;gap:4px}
+
+/* two col layout for resumen */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px}
+@media(max-width:900px){.two-col{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<!-- ══════════ HEADER ══════════ -->
+<header class="app-header">
+  <div>
+    <div class="app-logo">💰 ControlQ</div>
+    <div class="app-subtitle">Ingresos quincenales · Multi-mes</div>
+  </div>
+  <nav class="header-center">
+    <!-- period selector lives here -->
+  </nav>
+  <div class="period-pill">
+    <label>MES</label>
+    <select id="selMes">
+      <option value="1">Ene</option><option value="2">Feb</option>
+      <option value="3">Mar</option><option value="4" selected>Abr</option>
+      <option value="5">May</option><option value="6">Jun</option>
+      <option value="7">Jul</option><option value="8">Ago</option>
+      <option value="9">Sep</option><option value="10">Oct</option>
+      <option value="11">Nov</option><option value="12">Dic</option>
+    </select>
+    <label style="margin-left:6px">AÑO</label>
+    <input type="number" id="selAno" value="2026" min="2020" max="2099">
+    <span class="mes-badge" id="mesBadge">Abr 2026</span>
+  </div>
+</header>
+
+<!-- ══════════ NAV TABS ══════════ -->
+<div class="nav-tabs">
+  <button class="nav-tab active" onclick="showTab('resumen')">📊 Resumen</button>
+  <button class="nav-tab" onclick="showTab('ingresos')">📥 Ingresos</button>
+  <button class="nav-tab" onclick="showTab('gastosfijos')">💳 Gastos Fijos</button>
+  <button class="nav-tab" onclick="showTab('gastosvar')">💸 Gastos Variables</button>
+  <button class="nav-tab" onclick="showTab('deudas')">🏦 Deudas</button>
+  <button class="nav-tab" onclick="showTab('historico')">📈 Histórico</button>
+  <button class="nav-tab" onclick="showTab('graficas')">📉 Gráficas</button>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     TAB: RESUMEN
+══════════════════════════════════════════════ -->
+<div class="app-body">
+
+<div id="tab-resumen" class="tab-content active">
+  <!-- KPIs -->
+  <div class="kpi-grid" id="kpiGrid"></div>
+
+  <!-- Quincenas -->
+  <div class="q-grid" id="qGrid"></div>
+
+  <!-- Alertas -->
+  <div class="sec-header">
+    <div class="sec-title"><span>🔔</span> Pagos Próximos y Pendientes</div>
+  </div>
+  <div class="alerts-wrap" id="alertsWrap"></div>
+
+  <!-- Resumen por categoría -->
+  <div class="two-col">
+    <div>
+      <div class="sec-header"><div class="sec-title"><span>🗂</span> Gastos Variables por Categoría</div></div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Categoría</th><th>Total</th><th>%</th></tr></thead>
+        <tbody id="catTable"></tbody>
+      </table></div>
+    </div>
+    <div>
+      <div class="sec-header"><div class="sec-title"><span>💳</span> Estado Gastos Fijos</div></div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Gasto</th><th>Monto</th><th>Estado</th></tr></thead>
+        <tbody id="gfStatusTable"></tbody>
+      </table></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     TAB: INGRESOS
+══════════════════════════════════════════════ -->
+<div id="tab-ingresos" class="tab-content">
+  <div class="sec-header">
+    <div class="sec-title"><span>📥</span> Registro de Ingresos</div>
+    <div class="sec-actions">
+      <button class="btn btn-primary" onclick="openModal('ing')">＋ Agregar Ingreso</button>
+    </div>
+  </div>
+  <div class="scroll-hint">↔ Desliza para ver toda la tabla</div>
+  <div class="table-wrap" style="overflow-x:auto">
+    <table>
+      <thead><tr>
+        <th>Q</th><th>Fecha</th><th>Monto</th><th>Descripción / Notas</th><th></th>
+      </tr></thead>
+      <tbody id="ingTable"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     TAB: GASTOS FIJOS
+══════════════════════════════════════════════ -->
+<div id="tab-gastosfijos" class="tab-content">
+  <div class="sec-header">
+    <div class="sec-title"><span>💳</span> Gastos Fijos del Mes</div>
+    <div class="sec-actions">
+      <select class="filter-select" id="filtGFest" onchange="renderAll()">
+        <option value="">Todos</option>
+        <option value="Pagado">✅ Pagado</option>
+        <option value="Pendiente">⚠️ Pendiente</option>
+      </select>
+      <button class="btn btn-primary" onclick="openModal('gf')">＋ Agregar Gasto Fijo</button>
+    </div>
+  </div>
+  <div class="scroll-hint">↔ Desliza para ver toda la tabla</div>
+  <div class="table-wrap" style="overflow-x:auto">
+    <table>
+      <thead><tr>
+        <th>Q</th><th>Categoría</th><th>Nombre</th><th>Fecha Pago</th>
+        <th>Monto</th><th>Método</th><th>Estado</th><th>Días Rest.</th><th></th>
+      </tr></thead>
+      <tbody id="gfTable"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     TAB: GASTOS VARIABLES
+══════════════════════════════════════════════ -->
+<div id="tab-gastosvar" class="tab-content">
+  <div class="sec-header">
+    <div class="sec-title"><span>💸</span> Gastos Variables del Mes</div>
+    <div class="sec-actions">
+      <select class="filter-select" id="filtGVcat" onchange="renderAll()">
+        <option value="">Todas las categorías</option>
+        <option>Alimentación</option><option>Transporte</option>
+        <option>Entretenimiento</option><option>Salud</option>
+        <option>Ropa / Personal</option><option>Educación</option>
+        <option>Hogar / Mascotas</option><option>Otros</option>
+      </select>
+      <button class="btn btn-primary" onclick="openModal('gv')">＋ Agregar Gasto</button>
+    </div>
+  </div>
+  <div class="scroll-hint">↔ Desliza para ver toda la tabla</div>
+  <div class="table-wrap" style="overflow-x:auto">
+    <table>
+      <thead><tr>
+        <th>Q</th><th>Categoría</th><th>Fecha</th><th>Descripción</th><th>Monto</th><th></th>
+      </tr></thead>
+      <tbody id="gvTable"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     TAB: DEUDAS
+══════════════════════════════════════════════ -->
+<div id="tab-deudas" class="tab-content">
+  <div class="sec-header">
+    <div class="sec-title"><span>🏦</span> Seguimiento de Deudas y Tarjetas</div>
+    <div class="sec-actions">
+      <button class="btn btn-primary" onclick="openModal('deuda')">＋ Agregar Deuda</button>
+    </div>
+  </div>
+  <div class="scroll-hint">↔ Desliza para ver toda la tabla</div>
+  <div class="table-wrap" style="overflow-x:auto">
+    <table>
+      <thead><tr>
+        <th>Nombre Deuda / Tarjeta</th><th>Saldo Total</th>
+        <th>Pago Mínimo</th><th>Pago Realizado</th>
+        <th>Fecha Límite</th><th>% Pagado</th><th>Estado</th><th></th>
+      </tr></thead>
+      <tbody id="deudaTable"></tbody>
+    </table>
+  </div>
+  <div id="deudaKpiGrid" class="kpi-grid" style="margin-top:20px"></div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     TAB: HISTÓRICO
+══════════════════════════════════════════════ -->
+<div id="tab-historico" class="tab-content">
+  <div class="sec-header">
+    <div class="sec-title"><span>📈</span> Historial Anual</div>
+    <div class="sec-actions">
+      <select class="filter-select" id="filtHistAno" onchange="renderHistorico()">
+        <option value="2026">2026</option>
+        <option value="2025">2025</option>
+        <option value="2027">2027</option>
+      </select>
+    </div>
+  </div>
+  <div class="table-wrap" style="overflow-x:auto">
+    <table>
+      <thead><tr>
+        <th>Mes</th><th>Ingresos</th><th>Gastos Fijos</th>
+        <th>Gastos Var.</th><th>Total Gastos</th><th>Balance</th><th>% Gastado</th>
+      </tr></thead>
+      <tbody id="histTable"></tbody>
+    </table>
+  </div>
+  <div class="charts-grid" style="margin-top:8px">
+    <div class="chart-card">
+      <div class="chart-title"><span>📊</span> Ingresos vs Gastos — Año</div>
+      <div class="chart-wrap"><canvas id="chartHistBar"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title"><span>📉</span> Evolución del Balance Mensual</div>
+      <div class="chart-wrap"><canvas id="chartHistLine"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     TAB: GRÁFICAS
+══════════════════════════════════════════════ -->
+<div id="tab-graficas" class="tab-content">
+  <div class="sec-header">
+    <div class="sec-title"><span>📉</span> Gráficas — <span id="grafMesLabel" style="color:var(--grn)"></span></div>
+  </div>
+  <div class="charts-grid">
+    <div class="chart-card">
+      <div class="chart-title"><span>🥧</span> Gastos Variables por Categoría</div>
+      <div class="chart-wrap"><canvas id="chartPie"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title"><span>📊</span> Ingresos vs Gastos por Quincena</div>
+      <div class="chart-wrap"><canvas id="chartBar"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title"><span>📈</span> Evolución del Saldo en el Mes</div>
+      <div class="chart-wrap"><canvas id="chartLine"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title"><span>💹</span> Distribución % del Ingreso</div>
+      <div class="chart-wrap"><canvas id="chartDist"></canvas></div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /app-body -->
+
+<!-- ══════════════════════════════════════════════
+     MODALS
+══════════════════════════════════════════════ -->
+
+<!-- Modal: Ingreso -->
+<div class="modal-overlay" id="modal-ing">
+  <div class="modal">
+    <div class="modal-head">
+      <h2>📥 Agregar Ingreso</h2>
+      <button class="modal-close" onclick="closeModal('ing')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row two">
+        <div>
+          <label class="form-label">Fecha de Cobro *</label>
+          <input type="date" class="form-input" id="ing-fecha">
+        </div>
+        <div>
+          <label class="form-label">Monto Recibido *</label>
+          <input type="number" class="form-input" id="ing-monto" placeholder="0.00" step="0.01" min="0">
+        </div>
+      </div>
+      <div class="form-row">
+        <label class="form-label">Notas / Descripción</label>
+        <input type="text" class="form-input" id="ing-notas" placeholder="Ej: Salario quincenal, bono, comisión...">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('ing')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveIngreso()">Guardar Ingreso</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Gasto Fijo -->
+<div class="modal-overlay" id="modal-gf">
+  <div class="modal">
+    <div class="modal-head">
+      <h2>💳 Agregar Gasto Fijo</h2>
+      <button class="modal-close" onclick="closeModal('gf')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row two">
+        <div>
+          <label class="form-label">Categoría *</label>
+          <select class="form-input" id="gf-cat">
+            <option>Vivienda</option><option>Servicios</option>
+            <option>Suscripción</option><option>T. Crédito</option>
+            <option>Seguro</option><option>Educación</option>
+            <option>Deuda</option><option>Otros</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">Fecha de Pago *</label>
+          <input type="date" class="form-input" id="gf-fecha">
+        </div>
+      </div>
+      <div class="form-row">
+        <label class="form-label">Nombre del Gasto *</label>
+        <input type="text" class="form-input" id="gf-nombre" placeholder="Ej: Arrendamiento, Netflix, Visa...">
+      </div>
+      <div class="form-row two">
+        <div>
+          <label class="form-label">Monto *</label>
+          <input type="number" class="form-input" id="gf-monto" placeholder="0.00" step="0.01" min="0">
+        </div>
+        <div>
+          <label class="form-label">Método de Pago</label>
+          <select class="form-input" id="gf-metodo">
+            <option>Transferencia</option><option>Débito automático</option>
+            <option>T. Crédito</option><option>T. Débito</option>
+            <option>Efectivo</option><option>Cheque</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <label class="form-label">Estado</label>
+        <select class="form-input" id="gf-estado">
+          <option value="Pendiente">⚠️ Pendiente</option>
+          <option value="Pagado">✅ Pagado</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('gf')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveGastoFijo()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Gasto Variable -->
+<div class="modal-overlay" id="modal-gv">
+  <div class="modal">
+    <div class="modal-head">
+      <h2>💸 Agregar Gasto Variable</h2>
+      <button class="modal-close" onclick="closeModal('gv')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row two">
+        <div>
+          <label class="form-label">Categoría *</label>
+          <select class="form-input" id="gv-cat">
+            <option>Alimentación</option><option>Transporte</option>
+            <option>Entretenimiento</option><option>Salud</option>
+            <option>Ropa / Personal</option><option>Educación</option>
+            <option>Hogar / Mascotas</option><option>Otros</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">Fecha *</label>
+          <input type="date" class="form-input" id="gv-fecha">
+        </div>
+      </div>
+      <div class="form-row">
+        <label class="form-label">Descripción *</label>
+        <input type="text" class="form-input" id="gv-desc" placeholder="Ej: Supermercado, gasolina, cine...">
+      </div>
+      <div class="form-row">
+        <label class="form-label">Monto *</label>
+        <input type="number" class="form-input" id="gv-monto" placeholder="0.00" step="0.01" min="0">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('gv')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveGastoVar()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Deuda -->
+<div class="modal-overlay" id="modal-deuda">
+  <div class="modal">
+    <div class="modal-head">
+      <h2>🏦 Agregar Deuda / Tarjeta</h2>
+      <button class="modal-close" onclick="closeModal('deuda')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <label class="form-label">Nombre de la Deuda / Tarjeta *</label>
+        <input type="text" class="form-input" id="deu-nombre" placeholder="Ej: Visa Clásica, Préstamo Banco X...">
+      </div>
+      <div class="form-row two">
+        <div>
+          <label class="form-label">Saldo Total *</label>
+          <input type="number" class="form-input" id="deu-saldo" placeholder="0.00" step="0.01" min="0">
+        </div>
+        <div>
+          <label class="form-label">Pago Mínimo *</label>
+          <input type="number" class="form-input" id="deu-minimo" placeholder="0.00" step="0.01" min="0">
+        </div>
+      </div>
+      <div class="form-row two">
+        <div>
+          <label class="form-label">Pago Realizado</label>
+          <input type="number" class="form-input" id="deu-pagado" placeholder="0.00" step="0.01" min="0">
+        </div>
+        <div>
+          <label class="form-label">Fecha Límite</label>
+          <input type="date" class="form-input" id="deu-fecha">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('deuda')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveDeuda()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     JAVASCRIPT
+══════════════════════════════════════════════ -->
+<script>
+// ─── Storage ────────────────────────────────────────────────────────────
+const KEY = 'controlq_v2';
+function load(){
+  try{ return JSON.parse(localStorage.getItem(KEY)) || {ing:[],gf:[],gv:[],deudas:[]}; }
+  catch{ return {ing:[],gf:[],gv:[],deudas:[]}; }
+}
+function save(d){ localStorage.setItem(KEY,JSON.stringify(d)); }
+
+// ─── Seed data ───────────────────────────────────────────────────────────
+function seedData(){
+  const existing = load();
+  if(existing.ing.length) return; // ya tiene datos
+
+  const d = {ing:[],gf:[],gv:[],deudas:[]};
+
+  // Ingresos — Feb, Mar, Abr 2026
+  [[2,15,'Salario quincenal — Febrero',13800],
+   [2,28,'Salario quincenal — Febrero',13800],
+   [3,15,'Salario quincenal — Marzo',14500],
+   [3,30,'Salario quincenal — Marzo',14500],
+   [3,10,'Bono / Comisión — Marzo',2000],
+   [4,15,'Salario quincenal — Abril',15000],
+   [4,30,'Salario quincenal — Abril',15000],
+  ].forEach(([m,day,n,v])=>d.ing.push({id:uid(),fecha:`2026-${z(m)}-${z(day)}`,monto:v,notas:n}));
+
+  // Gastos Fijos
+  const gfRaw = [
+    [2,1,'Vivienda','Arrendamiento / Hipoteca',5000,'Transferencia','Pagado'],
+    [2,5,'Servicios','Internet',500,'Débito automático','Pagado'],
+    [2,8,'Suscripción','Netflix',250,'T. Crédito','Pagado'],
+    [2,8,'Suscripción','Spotify',100,'T. Crédito','Pagado'],
+    [2,10,'Servicios','Electricidad',780,'Efectivo','Pagado'],
+    [2,10,'Servicios','Agua',190,'Efectivo','Pagado'],
+    [2,10,'Servicios','Gas',140,'Efectivo','Pagado'],
+    [2,15,'T. Crédito','Visa Clásica',2500,'Débito automático','Pagado'],
+    [2,15,'Seguro','Seguro de Vida / Auto',350,'Débito automático','Pagado'],
+    [2,20,'T. Crédito','Mastercard Gold',1800,'Débito automático','Pagado'],
+    [2,28,'Deuda','Préstamo Personal Banco',2000,'Transferencia','Pagado'],
+    [3,1,'Vivienda','Arrendamiento / Hipoteca',5000,'Transferencia','Pagado'],
+    [3,5,'Servicios','Internet',500,'Débito automático','Pagado'],
+    [3,8,'Suscripción','Netflix',250,'T. Crédito','Pagado'],
+    [3,8,'Suscripción','Spotify',100,'T. Crédito','Pagado'],
+    [3,10,'Servicios','Electricidad',820,'Efectivo','Pagado'],
+    [3,10,'Servicios','Agua',195,'Efectivo','Pagado'],
+    [3,10,'Servicios','Gas',145,'Efectivo','Pagado'],
+    [3,15,'T. Crédito','Visa Clásica',2500,'Débito automático','Pagado'],
+    [3,15,'Seguro','Seguro de Vida / Auto',350,'Débito automático','Pagado'],
+    [3,15,'Educación','Colegiatura / Curso',800,'Transferencia','Pagado'],
+    [3,20,'T. Crédito','Mastercard Gold',1800,'Débito automático','Pagado'],
+    [3,30,'Deuda','Préstamo Personal Banco',2000,'Transferencia','Pagado'],
+    [4,1,'Vivienda','Arrendamiento / Hipoteca',5000,'Transferencia','Pagado'],
+    [4,5,'Servicios','Internet',500,'Débito automático','Pagado'],
+    [4,8,'Suscripción','Netflix',250,'T. Crédito','Pagado'],
+    [4,8,'Suscripción','Spotify',100,'T. Crédito','Pagado'],
+    [4,8,'Suscripción','Otro servicio digital',150,'T. Crédito','Pagado'],
+    [4,10,'Servicios','Electricidad',800,'Efectivo','Pagado'],
+    [4,10,'Servicios','Agua',200,'Efectivo','Pagado'],
+    [4,10,'Servicios','Gas',150,'Efectivo','Pagado'],
+    [4,15,'T. Crédito','Visa Clásica',2500,'Débito automático','Pendiente'],
+    [4,15,'Seguro','Seguro de Vida / Auto',350,'Débito automático','Pendiente'],
+    [4,15,'Educación','Colegiatura / Curso',800,'Transferencia','Pendiente'],
+    [4,20,'T. Crédito','Mastercard Gold',1800,'Débito automático','Pendiente'],
+    [4,30,'Deuda','Préstamo Personal Banco',2000,'Transferencia','Pendiente'],
+  ];
+  gfRaw.forEach(([m,day,cat,nom,mto,met,est])=>d.gf.push({
+    id:uid(),fecha:`2026-${z(m)}-${z(day)}`,cat,nombre:nom,monto:mto,metodo:met,estado:est
+  }));
+
+  // Gastos Variables
+  const gvRaw = [
+    [2,2,'Alimentación','Supermercado — compra semanal',780],
+    [2,4,'Transporte','Gasolina / Combustible',380],
+    [2,6,'Alimentación','Restaurante / Almuerzo',270],
+    [2,9,'Salud','Farmacia / Medicamentos',130],
+    [2,12,'Entretenimiento','Salida social / Cine',180],
+    [2,14,'Transporte','Taxi / Uber',110],
+    [2,16,'Alimentación','Supermercado — compra semanal',800],
+    [2,18,'Transporte','Gasolina / Combustible',380],
+    [2,21,'Alimentación','Restaurante / Cena',320],
+    [2,23,'Entretenimiento','Ocio fin de semana',400],
+    [2,26,'Ropa / Personal','Cuidado personal',250],
+    [2,27,'Otros','Gastos varios / Imprevistos',160],
+    [3,2,'Alimentación','Supermercado — compra semanal',810],
+    [3,4,'Transporte','Gasolina / Combustible',400],
+    [3,6,'Alimentación','Restaurante / Almuerzo',290],
+    [3,9,'Salud','Consulta médica + farmacia',450],
+    [3,11,'Entretenimiento','Salida social',220],
+    [3,13,'Transporte','Taxi / Uber',130],
+    [3,17,'Alimentación','Supermercado — compra semanal',830],
+    [3,18,'Transporte','Gasolina / Combustible',400],
+    [3,20,'Alimentación','Restaurante / Almuerzo semanal',310],
+    [3,22,'Entretenimiento','Concierto / Evento',550],
+    [3,25,'Educación','Libros / Material educativo',300],
+    [3,27,'Ropa / Personal','Ropa / Zapatos',480],
+    [3,28,'Otros','Imprevistos del mes',200],
+    [4,2,'Alimentación','Supermercado — compra semanal',800],
+    [4,3,'Transporte','Gasolina / Combustible',400],
+    [4,5,'Alimentación','Restaurante / Comida fuera',350],
+    [4,7,'Entretenimiento','Cine / Salida social',200],
+    [4,9,'Salud','Farmacia / Medicamentos',150],
+    [4,12,'Alimentación','Supermercado — compra semanal',750],
+    [4,14,'Transporte','Taxi / Uber',120],
+    [4,18,'Alimentación','Restaurante / Almuerzo',280],
+    [4,19,'Entretenimiento','Salida / Ocio fin de semana',450],
+    [4,21,'Transporte','Gasolina / Combustible',400],
+    [4,24,'Alimentación','Supermercado — compra semanal',820],
+    [4,26,'Ropa / Personal','Cuidado personal / Ropa',300],
+    [4,28,'Otros','Gastos varios / Imprevistos',200],
+  ];
+  gvRaw.forEach(([m,day,cat,desc,mto])=>d.gv.push({
+    id:uid(),fecha:`2026-${z(m)}-${z(day)}`,cat,desc,monto:mto
+  }));
+
+  // Deudas
+  d.deudas=[
+    {id:uid(),nombre:'Visa Clásica — Banco X',saldo:15000,minimo:2500,pagado:2500,fecha:'2026-04-15'},
+    {id:uid(),nombre:'Mastercard Gold — Banco Y',saldo:8000,minimo:1800,pagado:1800,fecha:'2026-04-20'},
+    {id:uid(),nombre:'Préstamo Personal — Banco Z',saldo:25000,minimo:2000,pagado:2000,fecha:'2026-04-30'},
+    {id:uid(),nombre:'Crédito Departamental',saldo:3500,minimo:700,pagado:700,fecha:'2026-04-25'},
+  ];
+
+  save(d);
+}
+
+function z(n){return String(n).padStart(2,'0')}
+function uid(){return Math.random().toString(36).slice(2,9)}
+
+// ─── Period ──────────────────────────────────────────────────────────────
+let curMes = 4, curAno = 2026;
+const MESES_NOM = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
+                   'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const MESES_CORTO = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+
+document.getElementById('selMes').addEventListener('change', e=>{
+  curMes=+e.target.value; updateBadge(); renderAll();
+});
+document.getElementById('selAno').addEventListener('change', e=>{
+  curAno=+e.target.value; updateBadge(); renderAll();
+});
+
+function updateBadge(){
+  document.getElementById('mesBadge').textContent =
+    MESES_CORTO[curMes-1]+' '+curAno;
+  const el=document.getElementById('grafMesLabel');
+  if(el) el.textContent=MESES_NOM[curMes-1]+' '+curAno;
+}
+
+// ─── Helpers ────────────────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+const fmt = n => {
+  if(n===undefined||n===null||n==='') return '—';
+  return new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN',minimumFractionDigits:2}).format(n);
+};
+const pct = n => n==null ? '—' : (n*100).toFixed(1)+'%';
+const parseDate = s => s ? new Date(s+'T00:00:00') : null;
+const fmtDate = s => { if(!s) return '—'; const d=parseDate(s); return d.getDate()+'/'+(d.getMonth()+1)+'/'+d.getFullYear(); };
+const getQ = s => { if(!s) return ''; const d=parseDate(s); return d.getDate()<=15?'Q1':'Q2'; };
+const getMes = s => parseDate(s)?.getMonth()+1;
+const getAno = s => parseDate(s)?.getFullYear();
+const inPeriod = s => getMes(s)===curMes && getAno(s)===curAno;
+
+const CAT_ICONS = {
+  'Alimentación':'🥑','Transporte':'🚗','Entretenimiento':'🎬',
+  'Salud':'💊','Ropa / Personal':'👗','Educación':'📚',
+  'Hogar / Mascotas':'🏡','Otros':'📦'
+};
+const CAT_CLASS = {
+  'Alimentación':'cat-alim','Transporte':'cat-trans','Entretenimiento':'cat-ent',
+  'Salud':'cat-sal','Ropa / Personal':'cat-ropa','Educación':'cat-edu',
+  'Hogar / Mascotas':'cat-hog','Otros':'cat-otros'
+};
+const CATS = ['Alimentación','Transporte','Entretenimiento','Salud','Ropa / Personal','Educación','Hogar / Mascotas','Otros'];
+
+function qTag(q){
+  if(!q) return '';
+  return `<span class="tag tag-${q.toLowerCase()}">${q}</span>`;
+}
+function estadoTag(e){
+  if(e==='Pagado') return `<span class="tag tag-grn">✅ Pagado</span>`;
+  return `<span class="tag tag-red">⚠️ Pendiente</span>`;
+}
+
+// ─── Computed ────────────────────────────────────────────────────────────
+function calcPeriod(m, a){
+  const d = load();
+  const ing    = d.ing.filter(r=>getMes(r.fecha)===m && getAno(r.fecha)===a);
+  const gf     = d.gf.filter(r=>getMes(r.fecha)===m && getAno(r.fecha)===a);
+  const gv     = d.gv.filter(r=>getMes(r.fecha)===m && getAno(r.fecha)===a);
+  const sumArr = arr => arr.reduce((s,r)=>s+(+r.monto||0),0);
+
+  const ingQ1=ing.filter(r=>getQ(r.fecha)==='Q1'), ingQ2=ing.filter(r=>getQ(r.fecha)==='Q2');
+  const gfQ1=gf.filter(r=>getQ(r.fecha)==='Q1'), gfQ2=gf.filter(r=>getQ(r.fecha)==='Q2');
+  const gvQ1=gv.filter(r=>getQ(r.fecha)==='Q1'), gvQ2=gv.filter(r=>getQ(r.fecha)==='Q2');
+
+  const totalIng=sumArr(ing), totalGF=sumArr(gf), totalGV=sumArr(gv);
+  const totalGastos=totalGF+totalGV;
+  const balance=totalIng-totalGastos;
+
+  const ingQ1t=sumArr(ingQ1),ingQ2t=sumArr(ingQ2);
+  const gfQ1t=sumArr(gfQ1),gfQ2t=sumArr(gfQ2);
+  const gvQ1t=sumArr(gvQ1),gvQ2t=sumArr(gvQ2);
+
+  return {
+    ing,gf,gv,
+    totalIng,totalGF,totalGV,totalGastos,balance,
+    ingQ1t,ingQ2t,gfQ1t,gfQ2t,gvQ1t,gvQ2t,
+    dispQ1:ingQ1t-gfQ1t-gvQ1t,
+    dispQ2:ingQ2t-gfQ2t-gvQ2t,
+    gfPagado:sumArr(gf.filter(r=>r.estado==='Pagado')),
+    gfPendiente:sumArr(gf.filter(r=>r.estado==='Pendiente')),
+    catTotals: CATS.map(c=>({cat:c, total:sumArr(gv.filter(r=>r.cat===c))}))
+  };
+}
+
+// ─── RENDER ALL ─────────────────────────────────────────────────────────
+let chartInstances = {};
+
+function renderAll(){
+  updateBadge();
+  renderResumen();
+  renderIngresos();
+  renderGastosFijos();
+  renderGastosVar();
+  renderDeudas();
+  renderHistorico();
+  renderGraficas();
+}
+
+// ── Resumen ──────────────────────────────────────────────────────────────
+function renderResumen(){
+  const c = calcPeriod(curMes,curAno);
+  const pctG = c.totalIng>0 ? c.totalGastos/c.totalIng : 0;
+
+  // KPIs
+  const kpis = [
+    {icon:'💰',label:'Total Ingresos',val:fmt(c.totalIng),sub:'Mes completo',cls:'grn',bar:1},
+    {icon:'📤',label:'Total Gastos',val:fmt(c.totalGastos),sub:'Fijos + Variables',cls:'red',bar:pctG},
+    {icon:'⚖️',label:'Balance Disponible',val:fmt(c.balance),sub:'Ingresos − Gastos',cls:c.balance>=0?'blue':'red',bar:c.totalIng>0?Math.max(c.balance/c.totalIng,0):0},
+    {icon:'📊',label:'% Ingresos Gastados',val:pct(pctG),sub:`${fmt(c.totalGastos)} de ${fmt(c.totalIng)}`,cls:pctG>0.9?'red':pctG>0.75?'ylw':'grn',bar:Math.min(pctG,1)},
+    {icon:'🔵',label:'Ingresos Q1  (1–15)',val:fmt(c.ingQ1t),sub:'Primera quincena',cls:'blue',bar:c.totalIng>0?c.ingQ1t/c.totalIng:0},
+    {icon:'🟣',label:'Ingresos Q2  (16–30)',val:fmt(c.ingQ2t),sub:'Segunda quincena',cls:'purp',bar:c.totalIng>0?c.ingQ2t/c.totalIng:0},
+    {icon:'✅',label:'GF Pagados',val:fmt(c.gfPagado),sub:'Gastos fijos al día',cls:'teal',bar:c.totalGF>0?c.gfPagado/c.totalGF:0},
+    {icon:'⚠️',label:'GF Pendientes',val:fmt(c.gfPendiente),sub:'Por pagar',cls:c.gfPendiente>0?'ylw':'grn',bar:c.totalGF>0?c.gfPendiente/c.totalGF:0},
+  ];
+
+  $('kpiGrid').innerHTML = kpis.map(k=>`
+    <div class="kpi ${k.cls}">
+      <div class="kpi-icon">${k.icon}</div>
+      <div class="kpi-label">${k.label}</div>
+      <div class="kpi-value">${k.val}</div>
+      <div class="kpi-sub">${k.sub}</div>
+      <div class="kpi-bar"><div class="kpi-bar-fill" style="width:${Math.round((k.bar||0)*100)}%"></div></div>
+    </div>
+  `).join('');
+
+  // Quincenas
+  $('qGrid').innerHTML = `
+    ${qPanel('Q1','🔵','1ª Quincena  (días 1–15)','q1',c.ingQ1t,c.gfQ1t,c.gvQ1t,c.dispQ1)}
+    ${qPanel('Q2','🟣','2ª Quincena  (días 16–30)','q2',c.ingQ2t,c.gfQ2t,c.gvQ2t,c.dispQ2)}
+  `;
+
+  // Alertas
+  const today = new Date(); today.setHours(0,0,0,0);
+  const d=load();
+  const pending=d.gf.filter(r=>inPeriod(r.fecha)&&r.estado==='Pendiente')
+    .sort((a,b)=>new Date(a.fecha)-new Date(b.fecha));
+  if(!pending.length){
+    $('alertsWrap').innerHTML=`<div class="alert-item ok"><span>🎉</span><span class="alert-name">Sin pagos pendientes este mes</span></div>`;
+  } else {
+    $('alertsWrap').innerHTML = pending.slice(0,8).map(r=>{
+      const fd=parseDate(r.fecha); const diff=Math.round((fd-today)/(86400000));
+      const cls=diff<0?'danger':diff<=3?'warn':'ok';
+      const daysLbl=diff<0?`Vencido hace ${-diff} día(s)`:diff===0?'¡Hoy!':diff===1?'Mañana':`En ${diff} días`;
+      return `<div class="alert-item ${cls}">
+        <span>${diff<0?'🔴':diff<=3?'⚠️':'🔔'}</span>
+        <span class="alert-name">${r.nombre}</span>
+        <span style="color:var(--text3);font-size:.75rem">${r.cat}</span>
+        <span class="alert-days">${fmtDate(r.fecha)}</span>
+        <span style="font-family:var(--font-mono);font-size:.82rem">${fmt(r.monto)}</span>
+        <span class="alert-days">${daysLbl}</span>
+      </div>`;
+    }).join('');
+  }
+
+  // Cat table
+  const catRows = c.catTotals.filter(x=>x.total>0);
+  if(!catRows.length){
+    $('catTable').innerHTML=`<tr><td colspan="3" style="text-align:center;color:var(--text3);padding:24px">Sin gastos variables registrados</td></tr>`;
+  } else {
+    $('catTable').innerHTML = catRows.sort((a,b)=>b.total-a.total).map(x=>{
+      const p=c.totalGV>0?x.total/c.totalGV:0;
+      return `<tr>
+        <td><span class="${CAT_CLASS[x.cat]||''}">${CAT_ICONS[x.cat]||''} ${x.cat}</span></td>
+        <td class="mono">${fmt(x.total)}</td>
+        <td><div style="display:flex;align-items:center;gap:6px">
+          <div style="flex:1;height:4px;background:var(--bg3);border-radius:2px">
+            <div style="width:${Math.round(p*100)}%;height:100%;border-radius:2px;background:var(--grn)"></div>
+          </div>
+          <span style="font-size:.72rem;color:var(--text3);width:36px;text-align:right">${pct(p)}</span>
+        </div></td>
+      </tr>`;
+    }).join('');
+  }
+
+  // GF status table
+  const gfRows=d.gf.filter(r=>inPeriod(r.fecha)).slice(0,10);
+  $('gfStatusTable').innerHTML = !gfRows.length
+    ? `<tr><td colspan="3" style="text-align:center;color:var(--text3);padding:24px">Sin gastos fijos registrados</td></tr>`
+    : gfRows.map(r=>`<tr>
+        <td class="bold">${r.nombre}</td>
+        <td class="mono">${fmt(r.monto)}</td>
+        <td>${estadoTag(r.estado)}</td>
+      </tr>`).join('');
+}
+
+function qPanel(q,icon,title,cls,ing,gf,gv,disp){
+  const totalG=gf+gv;
+  const dispColor=disp<0?'var(--red)':'var(--grn)';
+  return `<div class="q-panel">
+    <div class="q-panel-head ${cls}">
+      <h3>${icon} ${title}</h3>
+      <span class="tag tag-${cls}">${q}</span>
+    </div>
+    <div class="q-row"><label>Ingresos recibidos</label><span class="val" style="color:var(--grn)">${fmt(ing)}</span></div>
+    <div class="q-row"><label>Gastos Fijos</label><span class="val" style="color:var(--red)">${fmt(gf)}</span></div>
+    <div class="q-row"><label>Gastos Variables</label><span class="val" style="color:var(--org)">${fmt(gv)}</span></div>
+    <div class="q-row spent total-row"><label>Total Gastos</label><span class="val">${fmt(totalG)}</span></div>
+    <div class="q-row avail total-row"><label>💵 Disponible</label><span class="val" style="color:${dispColor}">${fmt(disp)}</span></div>
+  </div>`;
+}
+
+// ── Ingresos ─────────────────────────────────────────────────────────────
+function renderIngresos(){
+  const d=load();
+  const rows=d.ing.filter(r=>inPeriod(r.fecha)).sort((a,b)=>new Date(a.fecha)-new Date(b.fecha));
+  const total=rows.reduce((s,r)=>s+(+r.monto||0),0);
+  if(!rows.length){
+    $('ingTable').innerHTML=`<tr><td colspan="5"><div class="empty-state"><div class="empty-state-icon">📥</div><p>Sin ingresos registrados para ${MESES_NOM[curMes-1]} ${curAno}.<br>Presiona "＋ Agregar Ingreso" para comenzar.</p></div></td></tr>`;
+    return;
+  }
+  $('ingTable').innerHTML = rows.map(r=>`
+    <tr>
+      <td>${qTag(getQ(r.fecha))}</td>
+      <td class="bold">${fmtDate(r.fecha)}</td>
+      <td class="mono" style="color:var(--grn)">${fmt(r.monto)}</td>
+      <td style="color:var(--text2)">${r.notas||'—'}</td>
+      <td><button class="del-btn" onclick="delItem('ing','${r.id}')">🗑</button></td>
+    </tr>
+  `).join('') + `<tr class="table-total">
+    <td colspan="2" style="text-align:right">TOTAL</td>
+    <td class="mono" style="color:var(--grn)">${fmt(total)}</td>
+    <td colspan="2"></td>
+  </tr>`;
+}
+
+// ── Gastos Fijos ─────────────────────────────────────────────────────────
+function renderGastosFijos(){
+  const d=load();
+  const filtEst=$('filtGFest').value;
+  let rows=d.gf.filter(r=>inPeriod(r.fecha));
+  if(filtEst) rows=rows.filter(r=>r.estado===filtEst);
+  rows.sort((a,b)=>new Date(a.fecha)-new Date(b.fecha));
+  const total=rows.reduce((s,r)=>s+(+r.monto||0),0);
+  const today=new Date(); today.setHours(0,0,0,0);
+
+  if(!rows.length){
+    $('gfTable').innerHTML=`<tr><td colspan="9"><div class="empty-state"><div class="empty-state-icon">💳</div><p>Sin gastos fijos para este período.</p></div></td></tr>`;
+    return;
+  }
+  $('gfTable').innerHTML = rows.map(r=>{
+    const fd=parseDate(r.fecha);
+    const diff=Math.round((fd-today)/86400000);
+    const daysLbl=r.estado==='Pagado'?'✓ Pagado':diff<0?`Vencido ${-diff}d`:diff===0?'¡Hoy!':diff+'d';
+    const daysColor=r.estado==='Pagado'?'var(--text3)':diff<0?'var(--red)':diff<=3?'var(--ylw)':'var(--text2)';
+    return `<tr>
+      <td>${qTag(getQ(r.fecha))}</td>
+      <td><span style="font-size:.8rem;color:var(--text2)">${r.cat}</span></td>
+      <td class="bold">${r.nombre}</td>
+      <td>${fmtDate(r.fecha)}</td>
+      <td class="mono">${fmt(r.monto)}</td>
+      <td style="color:var(--text3);font-size:.78rem">${r.metodo||'—'}</td>
+      <td>${estadoTag(r.estado)}</td>
+      <td style="color:${daysColor};font-family:var(--font-mono);font-size:.78rem">${daysLbl}</td>
+      <td><button class="del-btn" onclick="delItem('gf','${r.id}')">🗑</button></td>
+    </tr>`;
+  }).join('') + `<tr class="table-total">
+    <td colspan="4" style="text-align:right">TOTAL</td>
+    <td class="mono">${fmt(total)}</td>
+    <td colspan="4"></td>
+  </tr>`;
+}
+
+// ── Gastos Variables ─────────────────────────────────────────────────────
+function renderGastosVar(){
+  const d=load();
+  const filtCat=$('filtGVcat').value;
+  let rows=d.gv.filter(r=>inPeriod(r.fecha));
+  if(filtCat) rows=rows.filter(r=>r.cat===filtCat);
+  rows.sort((a,b)=>new Date(a.fecha)-new Date(b.fecha));
+  const total=rows.reduce((s,r)=>s+(+r.monto||0),0);
+
+  if(!rows.length){
+    $('gvTable').innerHTML=`<tr><td colspan="6"><div class="empty-state"><div class="empty-state-icon">💸</div><p>Sin gastos variables para este período.</p></div></td></tr>`;
+    return;
+  }
+  $('gvTable').innerHTML = rows.map(r=>`
+    <tr>
+      <td>${qTag(getQ(r.fecha))}</td>
+      <td><span class="${CAT_CLASS[r.cat]||''}">${CAT_ICONS[r.cat]||''} ${r.cat}</span></td>
+      <td>${fmtDate(r.fecha)}</td>
+      <td class="bold">${r.desc}</td>
+      <td class="mono">${fmt(r.monto)}</td>
+      <td><button class="del-btn" onclick="delItem('gv','${r.id}')">🗑</button></td>
+    </tr>
+  `).join('') + `<tr class="table-total">
+    <td colspan="4" style="text-align:right">TOTAL</td>
+    <td class="mono">${fmt(total)}</td>
+    <td></td>
+  </tr>`;
+}
+
+// ── Deudas ───────────────────────────────────────────────────────────────
+function renderDeudas(){
+  const d=load();
+  const rows=d.deudas;
+  if(!rows.length){
+    $('deudaTable').innerHTML=`<tr><td colspan="8"><div class="empty-state"><div class="empty-state-icon">🏦</div><p>Sin deudas registradas.</p></div></td></tr>`;
+    $('deudaKpiGrid').innerHTML='';return;
+  }
+  const today=new Date(); today.setHours(0,0,0,0);
+  $('deudaTable').innerHTML = rows.map(r=>{
+    const p=r.saldo>0?(r.pagado||0)/r.saldo:0;
+    const ok=(r.pagado||0)>=(r.minimo||0);
+    const fd=r.fecha?parseDate(r.fecha):null;
+    const diff=fd?Math.round((fd-today)/86400000):null;
+    const daysLbl=diff!==null?(diff<0?`Vencido ${-diff}d`:diff===0?'¡Hoy!':diff+'d'):'—';
+    return `<tr>
+      <td class="bold">${r.nombre}</td>
+      <td class="mono" style="color:var(--red)">${fmt(r.saldo)}</td>
+      <td class="mono">${fmt(r.minimo)}</td>
+      <td class="mono" style="color:var(--grn)">${fmt(r.pagado||0)}</td>
+      <td>${fmtDate(r.fecha)}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="debt-progress" style="width:80px">
+            <div class="debt-progress-fill" style="width:${Math.round(Math.min(p,1)*100)}%;background:${p>=1?'var(--grn)':p>.5?'var(--ylw)':'var(--red)'}"></div>
+          </div>
+          <span style="font-family:var(--font-mono);font-size:.75rem">${pct(p)}</span>
+        </div>
+      </td>
+      <td>${ok?`<span class="tag tag-grn">✅ Mínimo cubierto</span>`:`<span class="tag tag-red">⚠️ Revisar pago</span>`}</td>
+      <td><button class="del-btn" onclick="delDeuda('${r.id}')">🗑</button></td>
+    </tr>`;
+  }).join('');
+
+  const totalSaldo=rows.reduce((s,r)=>s+(+r.saldo||0),0);
+  const totalPagado=rows.reduce((s,r)=>s+(+r.pagado||0),0);
+  const totalMinimo=rows.reduce((s,r)=>s+(+r.minimo||0),0);
+  const c=calcPeriod(curMes,curAno);
+  const ratioDeuda=c.totalIng>0?totalSaldo/c.totalIng:0;
+  const ratioCuota=c.totalIng>0?totalMinimo/c.totalIng:0;
+  $('deudaKpiGrid').innerHTML=[
+    {icon:'📊',label:'Deuda Total Acumulada',val:fmt(totalSaldo),cls:'red'},
+    {icon:'💳',label:'Total Pagado Este Mes',val:fmt(totalPagado),cls:'grn'},
+    {icon:'📉',label:'Cuota Mensual / Ingreso',val:pct(ratioCuota),cls:ratioCuota>.4?'red':'ylw'},
+    {icon:'⚠️',label:'Deuda Total / Ingreso Mensual',val:pct(ratioDeuda),cls:ratioDeuda>3?'red':'org'},
+  ].map(k=>`<div class="kpi ${k.cls}">
+    <div class="kpi-icon">${k.icon}</div>
+    <div class="kpi-label">${k.label}</div>
+    <div class="kpi-value">${k.val}</div>
+  </div>`).join('');
+}
+
+// ── Histórico ─────────────────────────────────────────────────────────────
+function renderHistorico(){
+  const histAno=+($('filtHistAno')?.value||curAno);
+  const rows=MESES_NOM.map((nom,i)=>{
+    const m=i+1; const c=calcPeriod(m,histAno);
+    return {nom,m,a:histAno,...c};
+  });
+  const totI=rows.reduce((s,r)=>s+r.totalIng,0);
+  const totGF=rows.reduce((s,r)=>s+r.totalGF,0);
+  const totGV=rows.reduce((s,r)=>s+r.totalGV,0);
+  const totG=rows.reduce((s,r)=>s+r.totalGastos,0);
+  const totB=rows.reduce((s,r)=>s+r.balance,0);
+
+  $('histTable').innerHTML = rows.map(r=>{
+    const hasData=r.totalIng>0||r.totalGastos>0;
+    const cls=!hasData?'style="color:var(--text3)"':'';
+    const bCls=r.balance>=0?'hist-positive':'hist-negative';
+    return `<tr ${!hasData?'style="opacity:.4"':''}>
+      <td class="bold">${r.nom}</td>
+      <td class="mono" style="color:var(--grn)">${hasData?fmt(r.totalIng):'—'}</td>
+      <td class="mono" style="color:var(--red)">${hasData?fmt(r.totalGF):'—'}</td>
+      <td class="mono" style="color:var(--org)">${hasData?fmt(r.totalGV):'—'}</td>
+      <td class="mono">${hasData?fmt(r.totalGastos):'—'}</td>
+      <td class="${bCls}">${hasData?fmt(r.balance):'—'}</td>
+      <td style="font-family:var(--font-mono)">${hasData?pct(r.totalIng>0?r.totalGastos/r.totalIng:0):'—'}</td>
+    </tr>`;
+  }).join('') + `<tr class="table-total">
+    <td>TOTAL AÑO</td>
+    <td class="mono" style="color:var(--grn)">${fmt(totI)}</td>
+    <td class="mono" style="color:var(--red)">${fmt(totGF)}</td>
+    <td class="mono" style="color:var(--org)">${fmt(totGV)}</td>
+    <td class="mono">${fmt(totG)}</td>
+    <td class="${totB>=0?'hist-positive':'hist-negative'}">${fmt(totB)}</td>
+    <td></td>
+  </tr>`;
+
+  // Charts histórico
+  const labels=MESES_CORTO;
+  const ingData=rows.map(r=>r.totalIng);
+  const gastData=rows.map(r=>r.totalGastos);
+  const balData=rows.map(r=>r.totalIng>0||r.totalGastos>0?r.balance:null);
+
+  buildChart('chartHistBar','bar',{
+    labels,
+    datasets:[
+      {label:'Ingresos',data:ingData,backgroundColor:'rgba(16,217,142,.7)',borderColor:'rgba(16,217,142,1)',borderWidth:1.5},
+      {label:'Total Gastos',data:gastData,backgroundColor:'rgba(255,77,114,.7)',borderColor:'rgba(255,77,114,1)',borderWidth:1.5},
+    ]
+  },{scales:{y:{ticks:{color:'#8ba3c7',callback:v=>fmt(v)},grid:{color:'#1a2235'}},x:{ticks:{color:'#8ba3c7'},grid:{color:'#1a2235'}}}});
+
+  buildChart('chartHistLine','line',{
+    labels,
+    datasets:[{
+      label:'Balance',data:balData,borderColor:'#4f8ef7',backgroundColor:'rgba(79,142,247,.1)',
+      tension:.4,fill:true,pointBackgroundColor:'#4f8ef7',pointRadius:4,spanGaps:true,
+    }]
+  },{scales:{y:{ticks:{color:'#8ba3c7',callback:v=>fmt(v)},grid:{color:'#1a2235'}},x:{ticks:{color:'#8ba3c7'},grid:{color:'#1a2235'}}}});
+}
+
+// ── Gráficas ──────────────────────────────────────────────────────────────
+function renderGraficas(){
+  $('grafMesLabel').textContent=MESES_NOM[curMes-1]+' '+curAno;
+  const c=calcPeriod(curMes,curAno);
+
+  // Pastel
+  const catData=c.catTotals.filter(x=>x.total>0);
+  const catColors=['#10d98e','#4f8ef7','#a78bfa','#fbbf24','#fb7185','#38bdf8','#2dd4bf','#94a3b8'];
+  buildChart('chartPie','doughnut',{
+    labels:catData.map(x=>x.cat),
+    datasets:[{data:catData.map(x=>x.total),backgroundColor:catColors.slice(0,catData.length),borderWidth:0,hoverOffset:8}]
+  },{plugins:{legend:{labels:{color:'#8ba3c7',font:{size:11}}}}});
+
+  // Barras Quincena
+  buildChart('chartBar','bar',{
+    labels:['Ingresos','Gastos Fijos','Gastos Variables'],
+    datasets:[
+      {label:'Q1  (1–15)',data:[c.ingQ1t,c.gfQ1t,c.gvQ1t],backgroundColor:'rgba(79,142,247,.8)',borderRadius:4},
+      {label:'Q2  (16–30)',data:[c.ingQ2t,c.gfQ2t,c.gvQ2t],backgroundColor:'rgba(167,139,250,.8)',borderRadius:4},
+    ]
+  },{scales:{y:{ticks:{color:'#8ba3c7',callback:v=>fmt(v)},grid:{color:'#1a2235'}},x:{ticks:{color:'#8ba3c7'},grid:{color:'#1a2235'}}}});
+
+  // Línea evolución
+  const evo=[
+    c.ingQ1t,
+    c.ingQ1t-c.gfQ1t-c.gvQ1t,
+    c.ingQ1t-c.gfQ1t-c.gvQ1t+c.ingQ2t,
+    c.totalIng-c.totalGastos,
+  ];
+  buildChart('chartLine','line',{
+    labels:['Cobro Q1','Tras Gastos Q1','Cobro Q2','Fin de Mes'],
+    datasets:[{
+      label:'Saldo',data:evo,borderColor:'#10d98e',backgroundColor:'rgba(16,217,142,.1)',
+      tension:.4,fill:true,pointBackgroundColor:'#10d98e',pointRadius:5,
+    }]
+  },{scales:{y:{ticks:{color:'#8ba3c7',callback:v=>fmt(v)},grid:{color:'#1a2235'}},x:{ticks:{color:'#8ba3c7'},grid:{color:'#1a2235'}}}});
+
+  // Distribución %
+  const ti=c.totalIng||1;
+  buildChart('chartDist','bar',{
+    labels:['Gastos Fijos','Gastos Variables','Cuotas Deudas','Ahorro Estimado'],
+    datasets:[{
+      label:'% del Ingreso',
+      data:[c.totalGF/ti,c.totalGV/ti,
+            load().deudas.reduce((s,r)=>s+(+r.minimo||0),0)/ti,
+            Math.max(c.balance/ti,0)],
+      backgroundColor:['rgba(255,77,114,.8)','rgba(251,146,60,.8)','rgba(167,139,250,.8)','rgba(16,217,142,.8)'],
+      borderRadius:4,indexAxis:'y',
+    }]
+  },{
+    indexAxis:'y',
+    scales:{
+      x:{ticks:{color:'#8ba3c7',callback:v=>pct(v)},grid:{color:'#1a2235'}},
+      y:{ticks:{color:'#8ba3c7'},grid:{color:'#1a2235'}}
+    }
+  });
+}
+
+function buildChart(id,type,data,extraOpts){
+  if(chartInstances[id]){ chartInstances[id].destroy(); delete chartInstances[id]; }
+  const el=$(id); if(!el) return;
+  const ctx=el.getContext('2d');
+  chartInstances[id]=new Chart(ctx,{
+    type,data,
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#8ba3c7',boxWidth:12,font:{size:11}}},
+               tooltip:{backgroundColor:'#1f2d44',borderColor:'#2a3a55',borderWidth:1,
+                        titleColor:'#e2eaf6',bodyColor:'#8ba3c7'}},
+      ...(extraOpts||{})
+    }
+  });
+}
+
+// ─── Tab navigation ──────────────────────────────────────────────────────
+function showTab(name){
+  document.querySelectorAll('.tab-content').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(el=>el.classList.remove('active'));
+  $(`tab-${name}`).classList.add('active');
+  event.target.classList.add('active');
+  if(name==='graficas') renderGraficas();
+  if(name==='historico') renderHistorico();
+}
+
+// ─── Modals ───────────────────────────────────────────────────────────────
+function openModal(t){
+  const today=`2026-${z(curMes)}-15`;
+  if(t==='ing'){
+    $('ing-fecha').value=`${curAno}-${z(curMes)}-15`;
+    $('ing-monto').value='';$('ing-notas').value='';
+  }
+  if(t==='gf'){
+    $('gf-fecha').value=`${curAno}-${z(curMes)}-01`;
+    $('gf-monto').value='';$('gf-nombre').value='';
+  }
+  if(t==='gv'){
+    $('gv-fecha').value=`${curAno}-${z(curMes)}-01`;
+    $('gv-monto').value='';$('gv-desc').value='';
+  }
+  if(t==='deuda'){
+    $('deu-nombre').value='';$('deu-saldo').value='';
+    $('deu-minimo').value='';$('deu-pagado').value='';
+    $('deu-fecha').value=`${curAno}-${z(curMes)}-30`;
+  }
+  $(`modal-${t}`).classList.add('open');
+}
+function closeModal(t){ $(`modal-${t}`).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',e=>{
+  if(e.target===o) o.classList.remove('open');
+}));
+
+// ─── Save functions ───────────────────────────────────────────────────────
+function saveIngreso(){
+  const fecha=$('ing-fecha').value, monto=+$('ing-monto').value;
+  if(!fecha||!monto){alert('Fecha y monto son obligatorios');return;}
+  const d=load();
+  d.ing.push({id:uid(),fecha,monto,notas:$('ing-notas').value});
+  save(d); closeModal('ing'); renderAll();
+}
+function saveGastoFijo(){
+  const fecha=$('gf-fecha').value, monto=+$('gf-monto').value, nombre=$('gf-nombre').value;
+  if(!fecha||!monto||!nombre){alert('Categoría, nombre, fecha y monto son obligatorios');return;}
+  const d=load();
+  d.gf.push({id:uid(),fecha,cat:$('gf-cat').value,nombre,monto,
+             metodo:$('gf-metodo').value,estado:$('gf-estado').value});
+  save(d); closeModal('gf'); renderAll();
+}
+function saveGastoVar(){
+  const fecha=$('gv-fecha').value, monto=+$('gv-monto').value, desc=$('gv-desc').value;
+  if(!fecha||!monto||!desc){alert('Categoría, descripción, fecha y monto son obligatorios');return;}
+  const d=load();
+  d.gv.push({id:uid(),fecha,cat:$('gv-cat').value,desc,monto});
+  save(d); closeModal('gv'); renderAll();
+}
+function saveDeuda(){
+  const nombre=$('deu-nombre').value;
+  if(!nombre){alert('El nombre es obligatorio');return;}
+  const d=load();
+  d.deudas.push({id:uid(),nombre,
+    saldo:+$('deu-saldo').value||0, minimo:+$('deu-minimo').value||0,
+    pagado:+$('deu-pagado').value||0, fecha:$('deu-fecha').value});
+  save(d); closeModal('deuda'); renderAll();
+}
+
+// ─── Delete ───────────────────────────────────────────────────────────────
+function delItem(tipo,id){
+  if(!confirm('¿Eliminar este registro?'))return;
+  const d=load();
+  d[tipo]=d[tipo].filter(r=>r.id!==id);
+  save(d); renderAll();
+}
+function delDeuda(id){
+  if(!confirm('¿Eliminar esta deuda?'))return;
+  const d=load();
+  d.deudas=d.deudas.filter(r=>r.id!==id);
+  save(d); renderAll();
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────
+seedData();
+renderAll();
+</script>
+</body>
+</html>
